@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File a Case — Internet Court</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header class="court-header">
+      <div class="court-title">⚖ Internet Court</div>
+      <div class="court-tagline">State your grievance. The internet shall judge.</div>
+    </header>
+
+    <div class="create-panel">
+      <a href="/" class="back-link">← Back to Court</a>
+      <hr class="rule" style="margin-top:12px;">
+
+      <span class="section-label">File a New Case</span>
+
+      <form method="POST">
+        <div class="field-row">
+          <div class="field-group">
+            <label for="plaintiff">Plaintiff (That's You)</label>
+            <input type="text" name="plaintiff" id="plaintiff" placeholder="e.g. Tired Roommate" required maxlength="80">
+          </div>
+          <div class="field-group">
+            <label for="defendant">Defendant (The Accused)</label>
+            <input type="text" name="defendant" id="defendant" placeholder="e.g. Jake from Upstairs" required maxlength="80">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="charge">The Charge</label>
+          <input type="text" name="charge" id="charge" placeholder="e.g. Eating my clearly-labelled yoghurt" required maxlength="140">
+          <div class="form-hint">Keep it petty. That's the whole point.</div>
+        </div>
+
+        <div class="field-group">
+          <label for="evidence">The Evidence</label>
+          <textarea name="evidence" id="evidence" rows="5"
+            placeholder="Describe what happened. In full dramatic detail. Don't hold back." required></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary">Submit Case to the Court</button>
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>

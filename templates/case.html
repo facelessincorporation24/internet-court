@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case #{{ '%04d' % case.id }} — Internet Court</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+
+    <!-- CLOSED BANNER -->
+    {% if status == 'closed' %}
+    <div class="case-closed-banner">🔒 This case has been closed — voting ended after 24 hours</div>
+    {% elif time_remaining %}
+    <div style="background:var(--wood-mid);color:var(--gold);text-align:center;padding:8px;font-family:'Courier Prime',monospace;font-size:0.68rem;font-weight:700;letter-spacing:0.14em;">⏱ {{ time_remaining }}</div>
+    {% endif %}
+
+    <!-- CASE HEADER -->
+    <header class="case-detail-header">
+      <a href="/" class="back-link">← Back to Court</a>
+      <div class="case-number">Case No. {{ '%04d' % case.id }}</div>
+      <div class="case-parties-heading">
+        {{ case.plaintiff }}
+        <span class="vs">vs</span>
+        {{ case.defendant }}
+      </div>
+      <div style="margin-top:10px;">
+        <span class="status-badge {{ status }}">{{ status|upper }}</span>
+      </div>
+    </header>
+
+    <!-- CASE DETAILS -->
+    <div class="panel">
+      <div style="margin-bottom:18px;">
+        <span class="field-label">The Charge</span>
+        <span class="charge-tag">{{ case.charge }}</span>
+      </div>
+      <div>
+        <span class="field-label">Evidence Presented</span>
+        <div class="evidence-block">{{ case.evidence }}</div>
+      </div>
+
+      <!-- REACTIONS -->
+      <div style="margin-top:22px;">
+        <span class="field-label">Gallery Reactions</span>
+        <div class="reactions-row" id="reactionsRow">
+          {% set reactions = [
+            ('lol',    '🤣', case.react_lol,    'Ridiculous'),
+            ('rage',   '😤', case.react_rage,   'Outrageous'),
+            ('shock',  '😱', case.react_shock,  'Shocking'),
+            ('salute', '🫡', case.react_salute, 'Respect'),
+          ] %}
+          {% for key, emoji, count, label in reactions %}
+          <button class="react-btn" id="react-{{ key }}"
+                  onclick="sendReaction('{{ key }}')" data-key="{{ key }}">
+            <span class="react-emoji">{{ emoji }}</span>
+            <span class="react-count" id="rc-{{ key }}">{{ count }}</span>
+            <span style="font-size:0.65rem;opacity:0.7;">{{ label }}</span>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- VOTING -->
+    <div class="panel" style="padding-top:0;">
+      <div class="voting-section">
+        <span class="section-label">Cast Your Verdict
+          {% if status == 'closed' %}<span style="color:var(--guilty);margin-left:8px;">(Case Closed)</span>{% endif %}
+        </span>
+
+        {% set total = case.guilty_votes + case.not_guilty_votes + case.life_sentence_votes %}
+        <div class="vote-grid">
+          <div class="vote-btn-wrap">
+            <div class="vote-count" style="color:var(--not-guilty);">{{ case.not_guilty_votes }}</div>
+            <div class="vote-count-label">Not Guilty</div>
+            <form action="/vote/{{ case.id }}/not_guilty" method="POST" style="width:100%;">
+              <button type="submit" class="btn-vote not-guilty" {{ 'disabled' if status == 'closed' else '' }}>✓ Not Guilty</button>
+            </form>
+          </div>
+          <div class="vote-btn-wrap">
+            <div class="vote-count" style="color:var(--guilty);">{{ case.guilty_votes }}</div>
+            <div class="vote-count-label">Guilty</div>
+            <form action="/vote/{{ case.id }}/guilty" method="POST" style="width:100%;">
+              <button type="submit" class="btn-vote guilty" {{ 'disabled' if status == 'closed' else '' }}>✗ Guilty</button>
+            </form>
+          </div>
+          <div class="vote-btn-wrap">
+            <div class="vote-count" style="color:var(--life);">{{ case.life_sentence_votes }}</div>
+            <div class="vote-count-label">Life Sentence</div>
+            <form action="/vote/{{ case.id }}/life_sentence" method="POST" style="width:100%;">
+              <button type="submit" class="btn-vote life" {{ 'disabled' if status == 'closed' else '' }}>⛓ Life Sentence</button>
+            </form>
+          </div>
+        </div>
+
+        {% if total > 0 %}
+        <div class="vote-bar-wrap" style="margin-top:18px;">
+          <div class="vote-bar-track">
+            <div class="vote-bar-seg not-guilty" style="width:{{ (case.not_guilty_votes / total * 100)|round(1) }}%"></div>
+            <div class="vote-bar-seg guilty"     style="width:{{ (case.guilty_votes / total * 100)|round(1) }}%"></div>
+            <div class="vote-bar-seg life"        style="width:{{ (case.life_sentence_votes / total * 100)|round(1) }}%"></div>
+          </div>
+          <p style="font-family:'Courier Prime',monospace;font-size:0.65rem;letter-spacing:0.12em;color:var(--ink-faint);margin-top:6px;text-align:right;">
+            {{ total }} VOTE{{ 's' if total != 1 else '' }} CAST
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- VERDICT STAMP -->
+    <div class="panel verdict-section">
+      {% if case.guilty_votes > case.not_guilty_votes and case.guilty_votes > case.life_sentence_votes %}
+        {% set verdict_class = "guilty" %}{% set verdict_icon = "✗" %}{% set verdict_text = "GUILTY" %}
+        {% set judge_quip = "The court finds this behaviour absolutely unacceptable. Classic." %}
+      {% elif case.life_sentence_votes > case.guilty_votes and case.life_sentence_votes > case.not_guilty_votes %}
+        {% set verdict_class = "life" %}{% set verdict_icon = "⛓" %}{% set verdict_text = "LIFE SENTENCE" %}
+        {% set judge_quip = "The internet has spoken, and it has no chill whatsoever." %}
+      {% elif case.not_guilty_votes > case.guilty_votes and case.not_guilty_votes > case.life_sentence_votes %}
+        {% set verdict_class = "not-guilty" %}{% set verdict_icon = "✓" %}{% set verdict_text = "NOT GUILTY" %}
+        {% set judge_quip = "The defendant walks free. For now. The court has eyes." %}
+      {% else %}
+        {% set verdict_class = "hung" %}{% set verdict_icon = "⚖" %}{% set verdict_text = "HUNG JURY" %}
+        {% set judge_quip = "The jury is deadlocked. As expected from this lot." %}
+      {% endif %}
+
+      <span class="section-label">Current Verdict</span>
+      <div style="display:flex;justify-content:center;margin:12px 0 6px;">
+        <div class="verdict-stamp {{ verdict_class }}">
+          <div class="verdict-icon">{{ verdict_icon }}</div>
+          <div class="verdict-text">{{ verdict_text }}</div>
+        </div>
+      </div>
+      <p class="judge-comment">{{ judge_quip }}</p>
+    </div>
+
+    <!-- AI JUDGE -->
+    <div class="ai-judge-section">
+      <div class="ai-judge-header">
+        <div class="judge-gavel">🔨</div>
+        <div>
+          <div class="ai-judge-label">Hon. AI Judge</div>
+          <div class="ai-judge-name">The Honourable Judge Claude</div>
+        </div>
+      </div>
+      <div id="judgeOutput" style="color:rgba(245,237,214,0.55);font-style:italic;">
+        The judge has not yet reviewed this case. Summon them when ready.
+      </div>
+      <button class="btn-summon" id="summonBtn" onclick="summonJudge()">⚖ Summon the Judge</button>
+    </div>
+
+    <!-- SHARE -->
+    <div class="panel" style="padding-top:16px;padding-bottom:24px;border-top:1px solid var(--parch-dim);">
+      <span class="section-label">Share This Case</span>
+      <div class="share-row">
+        <div class="share-url-box" id="shareUrl"></div>
+        <button class="btn-copy" id="copyBtn" onclick="copyLink()">Copy Link</button>
+      </div>
+    </div>
+
+    <!-- COMMENTS -->
+    <div class="comments-section">
+      <span class="section-label">The Gallery Speaks (<span id="commentCount">{{ comments|length }}</span> comment{{ 's' if comments|length != 1 else '' }})</span>
+
+      <div class="comment-form">
+        <div class="comment-row">
+          <input type="text" id="commentAuthor" placeholder="Your name (or alias)" maxlength="60">
+          <input type="text" id="commentRole" placeholder="You are… (e.g. Outraged Bystander)" maxlength="60">
+        </div>
+        <textarea id="commentText" rows="3" placeholder="State your position for the record. Objections welcome."></textarea>
+        <button class="btn-comment" onclick="submitComment()">Submit Testimony</button>
+      </div>
+
+      <div class="comments-list" id="commentsList">
+        {% if comments %}
+          {% for c in comments %}
+          <div class="comment-item">
+            <div class="comment-author">{{ c.author }}{% if c.role %} · <em style="font-weight:400;text-transform:none;letter-spacing:0;">{{ c.role }}</em>{% endif %}</div>
+            <div class="comment-text">{{ c.body }}</div>
+            <div class="comment-time">{{ c.created_at }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-comments" id="noComments">No testimony yet. The gallery is eerily quiet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const CASE_ID   = {{ case.id }};
+    const PLAINTIFF = {{ case.plaintiff | tojson }};
+    const DEFENDANT = {{ case.defendant | tojson }};
+    const CHARGE    = {{ case.charge    | tojson }};
+    const EVIDENCE  = {{ case.evidence  | tojson }};
+    const VERDICT   = "{{ verdict_text }}";
+    const API_KEY   = {{ api_key | tojson }};
+
+    // ── Share ──
+    document.getElementById('shareUrl').textContent = window.location.href;
+    function copyLink() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy Link'; btn.classList.remove('copied'); }, 2200);
+      });
+    }
+
+    // ── Reactions ──
+    const REACT_KEY = `ic_reacted_${CASE_ID}`;
+    function getReacted() {
+      try { return JSON.parse(localStorage.getItem(REACT_KEY) || '[]'); } catch { return []; }
+    }
+    function markReacted(key) {
+      const r = getReacted(); if (!r.includes(key)) r.push(key);
+      localStorage.setItem(REACT_KEY, JSON.stringify(r));
+    }
+    // Visually restore reacted state on load
+    getReacted().forEach(k => {
+      const btn = document.getElementById(`react-${k}`);
+      if (btn) btn.classList.add('reacted');
+    });
+
+    function sendReaction(key) {
+      const btn = document.getElementById(`react-${key}`);
+      if (btn.classList.contains('reacted')) return;
+      fetch(`/react/${CASE_ID}/${key}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+          document.getElementById(`rc-${key}`).textContent = d.count;
+          btn.classList.add('reacted');
+          markReacted(key);
+          btn.style.transform = 'scale(1.18)';
+          setTimeout(() => btn.style.transform = '', 250);
+        });
+    }
+
+    // ── AI Judge ──
+    async function summonJudge() {
+      const btn = document.getElementById('summonBtn');
+      const out = document.getElementById('judgeOutput');
+      btn.disabled = true;
+      btn.textContent = '⏳ The judge is reviewing…';
+      out.textContent = '';
+      out.style.color = 'rgba(245,237,214,0.7)';
+
+      const prompt = `You are the Honourable Judge Claude, presiding over Internet Court — a court that handles petty internet grievances with dramatic legal flair. You are dry, pompous, and take completely ridiculous cases with deadly seriousness.
+
+The case before you:
+- Plaintiff: ${PLAINTIFF}
+- Defendant: ${DEFENDANT}
+- Charge: ${CHARGE}
+- Evidence: ${EVIDENCE}
+- Current crowd verdict: ${VERDICT}
+
+Deliver your Closing Remarks in 3–4 sentences. Be theatrically judicial. Reference the charge and evidence specifically. End with a verdict statement that agrees or disagrees with the crowd. Keep it under 120 words. Do not use markdown.`;
+
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 200,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        const data = await res.json();
+        const text = data.content?.map(b => b.text || '').join('') || 'The judge declines to comment at this time.';
+        out.style.color = 'rgba(245,237,214,0.95)';
+        // typewriter effect
+        out.textContent = '';
+        let i = 0;
+        const interval = setInterval(() => {
+          if (i < text.length) { out.textContent += text[i++]; }
+          else {
+            clearInterval(interval);
+            btn.textContent = '🔨 Recall the Judge';
+            btn.disabled = false;
+          }
+        }, 18);
+      } catch (e) {
+        out.textContent = 'The judge is unavailable. Their clerk suggests checking your API key.';
+        out.style.color = 'rgba(245,237,214,0.5)';
+        btn.textContent = '⚖ Try Again';
+        btn.disabled = false;
+      }
+    }
+
+    // ── Comments ──
+    const STORE_KEY = `ic_comments_${CASE_ID}`;
+    function getLocalComments() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { return []; }
+    }
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function renderLocalComments() {
+      const list = document.getElementById('commentsList');
+      const noMsg = document.getElementById('noComments');
+      const local = getLocalComments();
+      if (!local.length) return;
+      if (noMsg) noMsg.remove();
+      local.forEach(c => {
+        if (document.getElementById(`lc-${c.ts}`)) return;
+        const div = document.createElement('div');
+        div.className = 'comment-item'; div.id = `lc-${c.ts}`;
+        div.innerHTML = `<div class="comment-author">${escHtml(c.author)}${c.role ? ` · <em style="font-weight:400;text-transform:none;letter-spacing:0;">${escHtml(c.role)}</em>` : ''}</div><div class="comment-text">${escHtml(c.body)}</div><div class="comment-time">${c.time}</div>`;
+        list.appendChild(div);
+      });
+      document.getElementById('commentCount').textContent = local.length;
+    }
+    function submitComment() {
+      const author = document.getElementById('commentAuthor').value.trim() || 'Anonymous';
+      const role   = document.getElementById('commentRole').value.trim();
+      const body   = document.getElementById('commentText').value.trim();
+      if (!body) { document.getElementById('commentText').focus(); return; }
+      const now = new Date();
+      const time = now.toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' });
+      const ts   = now.getTime();
+      const stored = getLocalComments();
+      stored.unshift({ author, role, body, time, ts });
+      localStorage.setItem(STORE_KEY, JSON.stringify(stored));
+      const noMsg = document.getElementById('noComments');
+      if (noMsg) noMsg.remove();
+      const div = document.createElement('div');
+      div.className = 'comment-item'; div.id = `lc-${ts}`;
+      div.innerHTML = `<div class="comment-author">${escHtml(author)}${role ? ` · <em style="font-weight:400;text-transform:none;letter-spacing:0;">${escHtml(role)}</em>` : ''}</div><div class="comment-text">${escHtml(body)}</div><div class="comment-time">${time}</div>`;
+      document.getElementById('commentsList').insertBefore(div, document.getElementById('commentsList').firstChild);
+      document.getElementById('commentCount').textContent = stored.length;
+      document.getElementById('commentAuthor').value = '';
+      document.getElementById('commentRole').value   = '';
+      document.getElementById('commentText').value   = '';
+    }
+    renderLocalComments();
+  </script>
+</body>
+</html>

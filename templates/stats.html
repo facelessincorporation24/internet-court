@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Court Stats — Internet Court</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+
+    <header class="court-header">
+      <div class="court-title">⚖ Internet Court</div>
+      <div class="court-tagline">The numbers don't lie. The defendants do.</div>
+    </header>
+
+    <div class="panel">
+      <a href="/" class="back-link">← Back to Court</a>
+      <hr class="rule" style="margin-top:12px;">
+      <span class="section-label">Court-Wide Statistics</span>
+
+      {% if overview %}
+      <div class="stats-grid">
+        <div class="stats-card">
+          <span class="stats-card-num">{{ overview.total_cases or 0 }}</span>
+          <span class="stats-card-label">Cases Filed</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-card-num">{{ overview.total_votes or 0 }}</span>
+          <span class="stats-card-label">Total Votes</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-card-num">{{ overview.closed_cases or 0 }}</span>
+          <span class="stats-card-label">Closed Cases</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-card-num">{{ overview.total_reactions or 0 }}</span>
+          <span class="stats-card-label">Reactions</span>
+        </div>
+      </div>
+
+      <!-- Verdict split chart -->
+      {% set tv = (overview.total_guilty or 0) + (overview.total_not_guilty or 0) + (overview.total_life or 0) %}
+      {% if tv > 0 %}
+      <span class="section-label" style="margin-top:8px;">How the Internet Votes</span>
+      <div class="vote-bar-wrap" style="margin-bottom:14px;">
+        <div class="vote-bar-track" style="height:18px; border-radius:4px;">
+          <div class="vote-bar-seg not-guilty" style="width:{{ ((overview.total_not_guilty or 0) / tv * 100)|round(1) }}%"></div>
+          <div class="vote-bar-seg guilty"     style="width:{{ ((overview.total_guilty or 0) / tv * 100)|round(1) }}%"></div>
+          <div class="vote-bar-seg life"       style="width:{{ ((overview.total_life or 0) / tv * 100)|round(1) }}%"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-family:'Courier Prime',monospace;font-size:0.72rem;color:var(--ink-faint);">
+        <span style="color:var(--not-guilty);">✓ Not Guilty — {{ ((overview.total_not_guilty or 0) / tv * 100)|round }}%</span>
+        <span style="color:var(--guilty);">✗ Guilty — {{ ((overview.total_guilty or 0) / tv * 100)|round }}%</span>
+        <span style="color:var(--life);">⛓ Life Sentence — {{ ((overview.total_life or 0) / tv * 100)|round }}%</span>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- SPOTLIGHT CASES -->
+    <div class="panel" style="border-top:2px solid var(--parch-dim);">
+      <span class="section-label">Notable Cases</span>
+
+      {% if hottest %}
+      <div class="spotlight-card">
+        <span class="spotlight-label">🔥 Hottest Case — Most Votes</span>
+        <a href="/case/{{ hottest.id }}" style="text-decoration:none;">
+          <div class="spotlight-parties">{{ hottest.plaintiff }} vs {{ hottest.defendant }}</div>
+          <div style="font-style:italic;color:var(--ink-faint);font-size:0.88rem;margin-top:4px;">"{{ hottest.charge }}"</div>
+          <div class="case-card-meta" style="margin-top:8px;">
+            <span class="vote-pill not-guilty">✓ {{ hottest.not_guilty_votes }}</span>
+            <span class="vote-pill guilty">✗ {{ hottest.guilty_votes }}</span>
+            <span class="vote-pill life">⛓ {{ hottest.life_sentence_votes }}</span>
+          </div>
+        </a>
+      </div>
+      {% endif %}
+
+      {% if most_controversial %}
+      <div class="spotlight-card" style="border-left-color:var(--guilty);">
+        <span class="spotlight-label" style="color:var(--guilty);">⚡ Most Controversial — Closest Split</span>
+        <a href="/case/{{ most_controversial.id }}" style="text-decoration:none;">
+          <div class="spotlight-parties">{{ most_controversial.plaintiff }} vs {{ most_controversial.defendant }}</div>
+          <div style="font-style:italic;color:var(--ink-faint);font-size:0.88rem;margin-top:4px;">"{{ most_controversial.charge }}"</div>
+          <div class="case-card-meta" style="margin-top:8px;">
+            <span class="vote-pill not-guilty">✓ {{ most_controversial.not_guilty_votes }}</span>
+            <span class="vote-pill guilty">✗ {{ most_controversial.guilty_votes }}</span>
+            <span class="vote-pill life">⛓ {{ most_controversial.life_sentence_votes }}</span>
+          </div>
+        </a>
+      </div>
+      {% endif %}
+
+      {% if most_dramatic %}
+      <div class="spotlight-card" style="border-left-color:var(--life);">
+        <span class="spotlight-label" style="color:var(--life);">⛓ Most Dramatic — Highest Life Sentences</span>
+        <a href="/case/{{ most_dramatic.id }}" style="text-decoration:none;">
+          <div class="spotlight-parties">{{ most_dramatic.plaintiff }} vs {{ most_dramatic.defendant }}</div>
+          <div style="font-style:italic;color:var(--ink-faint);font-size:0.88rem;margin-top:4px;">"{{ most_dramatic.charge }}"</div>
+          <div class="case-card-meta" style="margin-top:8px;">
+            <span class="vote-pill not-guilty">✓ {{ most_dramatic.not_guilty_votes }}</span>
+            <span class="vote-pill guilty">✗ {{ most_dramatic.guilty_votes }}</span>
+            <span class="vote-pill life">⛓ {{ most_dramatic.life_sentence_votes }}</span>
+          </div>
+        </a>
+      </div>
+      {% endif %}
+
+      {% if not hottest and not most_controversial and not most_dramatic %}
+      <div class="empty-state">
+        <span class="empty-icon">📊</span>
+        No data yet. File some cases and vote to see stats here.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</body>
+</html>

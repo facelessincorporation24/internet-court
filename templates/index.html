@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internet Court — Justice for Petty Things</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header class="court-header">
+      <div class="court-title">⚖ Internet Court</div>
+      <div class="court-tagline">Justice. But for petty things.</div>
+      <div class="case-number-badge">Est. The Internet · Open 24/7</div>
+    </header>
+
+    <!-- LIVE STATS BAR -->
+    {% if stats and stats.total_cases %}
+    <div class="stats-bar">
+      <div class="stat-cell">
+        <span class="stat-num">{{ stats.total_cases }}</span>
+        <span class="stat-lbl">Cases Filed</span>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-num">{{ stats.total_votes or 0 }}</span>
+        <span class="stat-lbl">Votes Cast</span>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-num">{{ stats.closed_cases or 0 }}</span>
+        <span class="stat-lbl">Closed</span>
+      </div>
+      <div class="stat-cell">
+        <a href="/stats" style="text-decoration:none;">
+          <span class="stat-num" style="font-size:1rem;">📊</span>
+          <span class="stat-lbl">Full Stats</span>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- CTA -->
+    <div class="panel" style="text-align:center; padding-top:28px; padding-bottom:28px; border-radius:0;">
+      <a href="/create" class="btn-primary">⚖ File a Case</a>
+      <p style="margin-top:12px; font-style:italic; color:var(--ink-faint); font-size:0.88rem;">
+        The court is always in session. The jury is always unqualified.
+      </p>
+    </div>
+
+    <!-- CASE LIST -->
+    <div class="panel" style="border-top:2px solid var(--parch-dim); border-radius:0 0 4px 4px;">
+
+      <!-- Sort tabs -->
+      <div class="sort-tabs">
+        <a href="/?sort=recent" class="sort-tab {{ 'active' if sort == 'recent' else '' }}">🕐 Recent</a>
+        <a href="/?sort=hot" class="sort-tab {{ 'active' if sort == 'hot' else '' }}">🔥 Hottest</a>
+        <a href="/?sort=controversial" class="sort-tab {{ 'active' if sort == 'controversial' else '' }}">⚡ Controversial</a>
+      </div>
+
+      {% if cases %}
+      <ul class="case-list">
+        {% for item in cases %}
+        {% set case = item.row %}
+        {% set status = item.status %}
+        {% set t_left = item.time_remaining %}
+        {% set total_votes = case.guilty_votes + case.not_guilty_votes + case.life_sentence_votes %}
+        <li>
+          <a href="/case/{{ case.id }}" style="text-decoration:none;">
+            <div class="case-card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+                <div class="case-card-id">Case #{{ '%04d' % case.id }}</div>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                  {% if status == 'open' and t_left %}
+                  <span style="font-family:'Courier Prime',monospace;font-size:0.58rem;color:var(--ink-faint);">⏱ {{ t_left }}</span>
+                  {% endif %}
+                  <span class="status-badge {{ status }}">{{ status|upper }}</span>
+                </div>
+              </div>
+              <div class="case-card-parties">
+                {{ case.plaintiff }}
+                <span class="vs">vs</span>
+                {{ case.defendant }}
+              </div>
+              <div class="case-card-charge">"{{ case.charge }}"</div>
+              <div class="case-card-meta">
+                <span class="vote-pill not-guilty">✓ {{ case.not_guilty_votes }}</span>
+                <span class="vote-pill guilty">✗ {{ case.guilty_votes }}</span>
+                <span class="vote-pill life">⛓ {{ case.life_sentence_votes }}</span>
+                {% if total_votes > 0 %}
+                <span style="font-family:'Courier Prime',monospace;font-size:0.62rem;color:var(--ink-faint);align-self:center;">
+                  {{ total_votes }} vote{{ 's' if total_votes != 1 else '' }}
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">
+        <span class="empty-icon">⚖</span>
+        No cases filed yet. Someone has to go first.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</body>
+</html>

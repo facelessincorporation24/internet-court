@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Not Found — Internet Court</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header class="court-header">
+      <div class="court-title">⚖ Internet Court</div>
+    </header>
+    <div class="panel" style="text-align:center; padding:48px 24px;">
+      <div style="font-size:3rem;margin-bottom:16px;">🔍</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--ink);">Case Not Found</h2>
+      <p style="font-style:italic;color:var(--ink-faint);margin:12px 0 28px;line-height:1.6;">
+        The case you're looking for has either been dismissed, never existed,<br>
+        or the defendant fled the jurisdiction.
+      </p>
+      <a href="/" class="btn-primary">Return to Court</a>
+    </div>
+  </div>
+</body>
+</html>
