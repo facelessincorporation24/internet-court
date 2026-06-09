@@ -276,5 +276,7 @@ def wipe_database():
     conn.execute("DELETE FROM sqlite_sequence WHERE name='cases' ")
     conn.commit()
     conn.close()
+    
+    return "Database wiped"
 if __name__ == "__main__":
     app.run()
