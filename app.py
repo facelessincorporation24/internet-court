@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-DATABASE = "database.db"
+# On Render with a persistent disk, set DATABASE_PATH=/var/data/database.db
+# On the free tier (ephemeral), this just falls back to a local file
+DATABASE = os.getenv("DATABASE_PATH", "database.db")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CASE_LIFETIME_HOURS = 24
 
@@ -20,7 +22,8 @@ def get_db_connection():
 
 def initialize_database():
     conn = get_db_connection()
-    with open("schema.sql", "r") as f:
+    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
+    with open(schema_path, "r") as f:
         conn.executescript(f.read())
     # Add new columns to existing databases without breaking them
     for col, default in [

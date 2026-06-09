@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: internet-court
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_PATH
+        value: /var/data/database.db
+    # Uncomment the disk section below if you upgrade to a paid plan
+    # and want your cases to survive restarts:
+    # disk:
+    #   name: internet-court-db
+    #   mountPath: /var/data
+    #   sizeGB: 1
