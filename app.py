@@ -269,14 +269,6 @@ def stats():
 def not_found(e):
     return render_template("404.html"), 404
 
-@app.route("/wipe-database")
-def wipe_database():
-    conn = get_db_connection()
-    conn.execute("DELETE FROM cases")
-    conn.execute("DELETE FROM sqlite_sequence WHERE name='cases' ")
-    conn.commit()
-    conn.close()
-    
-    return "Database wiped"
+
 if __name__ == "__main__":
     app.run()
