@@ -6,13 +6,6 @@ services:
     startCommand: gunicorn app:app
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: internet-court-db
-          property: connectionString
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
-
-databases:
-  - name: internet-court-db
-    databaseName: internet_court
-    plan: free
