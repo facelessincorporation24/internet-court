@@ -8,8 +8,6 @@
 </head>
 <body>
   <div class="container">
-
-    <!-- HEADER -->
     <header class="court-header">
       <div class="court-title">⚖ Internet Court</div>
       <div class="court-tagline">State your grievance. The internet shall judge.</div>
@@ -18,10 +16,9 @@
     <div class="create-panel">
       <a href="/" class="back-link">← Back to Court</a>
       <hr class="rule" style="margin-top:12px;">
-
       <span class="section-label">File a New Case</span>
 
-      <form method="POST">
+      <form method="POST" enctype="multipart/form-data">
         <div class="field-row">
           <div class="field-group">
             <label for="plaintiff">Plaintiff (That's You)</label>
@@ -33,10 +30,20 @@
           </div>
         </div>
 
-        <div class="field-group">
-          <label for="charge">The Charge</label>
-          <input type="text" name="charge" id="charge" placeholder="e.g. Eating my clearly-labelled yoghurt" required maxlength="140">
-          <div class="form-hint">Keep it petty. That's the whole point.</div>
+        <div class="field-row">
+          <div class="field-group">
+            <label for="charge">The Charge</label>
+            <input type="text" name="charge" id="charge" placeholder="e.g. Eating my clearly-labelled yoghurt" required maxlength="140">
+            <div class="form-hint">Keep it petty. That's the whole point.</div>
+          </div>
+          <div class="field-group">
+            <label for="category">Category</label>
+            <select name="category" id="category">
+              {% for key, label in categories %}
+              <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
 
         <div class="field-group">
@@ -45,10 +52,97 @@
             placeholder="Describe what happened. In full dramatic detail. Don't hold back." required></textarea>
         </div>
 
+        <!-- MEDIA UPLOAD -->
+        <div class="field-group">
+          <label>Exhibit A, B, C — Upload Media</label>
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('mediaInput').click()">
+            <div class="upload-icon">📎</div>
+            <div class="upload-text">Drop images or videos here, or click to browse</div>
+            <div class="upload-hint">Up to 3 files · Images (jpg/png/gif/webp) or Videos (mp4/webm/mov) · Max 50MB each</div>
+          </div>
+          <input type="file" name="media" id="mediaInput" multiple accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none" onchange="previewFiles(this)">
+          <div class="upload-previews" id="uploadPreviews"></div>
+        </div>
+
         <button type="submit" class="btn-primary">Submit Case to the Court</button>
       </form>
     </div>
-
   </div>
+
+  <script>
+    const MAX_FILES = 3;
+    let selectedFiles = [];
+
+    // Drag and drop
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      handleFiles(Array.from(e.dataTransfer.files));
+    });
+
+    function previewFiles(input) {
+      handleFiles(Array.from(input.files));
+    }
+
+    function handleFiles(newFiles) {
+      const allowed = ['image/jpeg','image/png','image/gif','image/webp','video/mp4','video/webm','video/quicktime'];
+      const valid = newFiles.filter(f => allowed.includes(f.type));
+      selectedFiles = [...selectedFiles, ...valid].slice(0, MAX_FILES);
+      renderPreviews();
+      syncFileInput();
+    }
+
+    function removeFile(i) {
+      selectedFiles.splice(i, 1);
+      renderPreviews();
+      syncFileInput();
+    }
+
+    function renderPreviews() {
+      const container = document.getElementById('uploadPreviews');
+      container.innerHTML = '';
+      selectedFiles.forEach((f, i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'preview-item';
+        if (f.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(f);
+          img.className = 'preview-thumb';
+          wrap.appendChild(img);
+        } else {
+          const vid = document.createElement('video');
+          vid.src = URL.createObjectURL(f);
+          vid.className = 'preview-thumb';
+          vid.muted = true;
+          wrap.appendChild(vid);
+          const tag = document.createElement('div');
+          tag.className = 'preview-type-tag';
+          tag.textContent = '▶ VIDEO';
+          wrap.appendChild(tag);
+        }
+        const name = document.createElement('div');
+        name.className = 'preview-name';
+        name.textContent = f.name.length > 22 ? f.name.slice(0,20)+'…' : f.name;
+        wrap.appendChild(name);
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'preview-remove';
+        rm.textContent = '✕';
+        rm.onclick = () => removeFile(i);
+        wrap.appendChild(rm);
+        container.appendChild(wrap);
+      });
+      document.getElementById('uploadZone').style.display = selectedFiles.length >= MAX_FILES ? 'none' : '';
+    }
+
+    function syncFileInput() {
+      const dt = new DataTransfer();
+      selectedFiles.forEach(f => dt.items.add(f));
+      document.getElementById('mediaInput').files = dt.files;
+    }
+  </script>
 </body>
 </html>

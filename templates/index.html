@@ -9,14 +9,12 @@
 <body>
   <div class="container">
 
-    <!-- HEADER -->
     <header class="court-header">
       <div class="court-title">⚖ Internet Court</div>
       <div class="court-tagline">Justice. But for petty things.</div>
       <div class="case-number-badge">Est. The Internet · Open 24/7</div>
     </header>
 
-    <!-- LIVE STATS BAR -->
     {% if stats and stats.total_cases %}
     <div class="stats-bar">
       <div class="stat-cell">
@@ -40,23 +38,53 @@
     </div>
     {% endif %}
 
-    <!-- CTA -->
-    <div class="panel" style="text-align:center; padding-top:28px; padding-bottom:28px; border-radius:0;">
+    <div class="panel" style="text-align:center;padding-top:28px;padding-bottom:28px;border-radius:0;">
       <a href="/create" class="btn-primary">⚖ File a Case</a>
-      <p style="margin-top:12px; font-style:italic; color:var(--ink-faint); font-size:0.88rem;">
+      <p style="margin-top:12px;font-style:italic;color:var(--ink-faint);font-size:0.88rem;">
         The court is always in session. The jury is always unqualified.
       </p>
     </div>
 
-    <!-- CASE LIST -->
-    <div class="panel" style="border-top:2px solid var(--parch-dim); border-radius:0 0 4px 4px;">
+    <div class="panel" style="border-top:2px solid var(--parch-dim);border-radius:0 0 4px 4px;">
 
-      <!-- Sort tabs -->
-      <div class="sort-tabs">
-        <a href="/?sort=recent" class="sort-tab {{ 'active' if sort == 'recent' else '' }}">🕐 Recent</a>
-        <a href="/?sort=hot" class="sort-tab {{ 'active' if sort == 'hot' else '' }}">🔥 Hottest</a>
-        <a href="/?sort=controversial" class="sort-tab {{ 'active' if sort == 'controversial' else '' }}">⚡ Controversial</a>
+      <!-- SEARCH -->
+      <form method="GET" action="/" style="margin-bottom:16px;">
+        <div class="search-bar-wrap">
+          <input type="text" name="q" class="search-input" placeholder="🔍  Search plaintiff, defendant, or charge…"
+                 value="{{ search_q }}" autocomplete="off" id="searchInput">
+          {% if active_cat %}<input type="hidden" name="cat" value="{{ active_cat }}">{% endif %}
+          {% if sort != 'recent' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+          {% if search_q %}
+          <a href="/?sort={{ sort }}{% if active_cat %}&cat={{ active_cat }}{% endif %}" class="search-clear">✕</a>
+          {% endif %}
+        </div>
+      </form>
+
+      <!-- CATEGORY PILLS -->
+      <div class="sort-tabs" style="margin-bottom:10px;">
+        <a href="/?sort={{ sort }}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="sort-tab cat-tab {{ 'active' if not active_cat else '' }}">All</a>
+        {% for key, label in categories %}
+        <a href="/?sort={{ sort }}&cat={{ key }}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="sort-tab cat-tab {{ 'active' if active_cat == key else '' }}">{{ label }}</a>
+        {% endfor %}
       </div>
+
+      <!-- SORT TABS -->
+      <div class="sort-tabs">
+        <a href="/?sort=recent{% if active_cat %}&cat={{ active_cat }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="sort-tab {{ 'active' if sort == 'recent' else '' }}">🕐 Recent</a>
+        <a href="/?sort=hot{% if active_cat %}&cat={{ active_cat }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="sort-tab {{ 'active' if sort == 'hot' else '' }}">🔥 Hottest</a>
+        <a href="/?sort=controversial{% if active_cat %}&cat={{ active_cat }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="sort-tab {{ 'active' if sort == 'controversial' else '' }}">⚡ Controversial</a>
+      </div>
+
+      {% if search_q %}
+      <p style="font-family:'Courier Prime',monospace;font-size:0.7rem;color:var(--ink-faint);letter-spacing:0.1em;margin-bottom:12px;">
+        {{ cases|length }} result{{ 's' if cases|length != 1 else '' }} for "{{ search_q }}"
+      </p>
+      {% endif %}
 
       {% if cases %}
       <ul class="case-list">
@@ -68,8 +96,11 @@
         <li>
           <a href="/case/{{ case.id }}" style="text-decoration:none;">
             <div class="case-card">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
-                <div class="case-card-id">Case #{{ '%04d' % case.id }}</div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <div class="case-card-id">Case #{{ '%04d' % case.id }}</div>
+                  <span class="cat-chip">{{ item.cat_label }}</span>
+                </div>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   {% if status == 'open' and t_left %}
                   <span style="font-family:'Courier Prime',monospace;font-size:0.58rem;color:var(--ink-faint);">⏱ {{ t_left }}</span>
@@ -78,9 +109,7 @@
                 </div>
               </div>
               <div class="case-card-parties">
-                {{ case.plaintiff }}
-                <span class="vs">vs</span>
-                {{ case.defendant }}
+                {{ case.plaintiff }}<span class="vs">vs</span>{{ case.defendant }}
               </div>
               <div class="case-card-charge">"{{ case.charge }}"</div>
               <div class="case-card-meta">
@@ -92,6 +121,9 @@
                   {{ total_votes }} vote{{ 's' if total_votes != 1 else '' }}
                 </span>
                 {% endif %}
+                {% if case.defendant_reply %}
+                <span style="font-family:'Courier Prime',monospace;font-size:0.62rem;color:var(--life);align-self:center;">💬 Reply filed</span>
+                {% endif %}
               </div>
             </div>
           </a>
@@ -101,7 +133,7 @@
       {% else %}
       <div class="empty-state">
         <span class="empty-icon">⚖</span>
-        No cases filed yet. Someone has to go first.
+        {% if search_q %}No cases matching "{{ search_q }}".{% else %}No cases filed yet. Someone has to go first.{% endif %}
       </div>
       {% endif %}
     </div>
